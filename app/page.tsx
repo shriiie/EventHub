@@ -5,7 +5,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/lib/supabase";
 import RsvpModal from "@/components/RsvpModal";
 import CreateEventModal from "@/components/CreateEventModal";
-import { Calendar, MapPin, Tag, Plus, Search, ShieldCheck, QrCode } from "lucide-react";
+import AuthModal from "@/components/AuthModal";
+import MyTicketsModal from "@/components/MyTicketsModal";
+import { Calendar, MapPin, Tag, Plus, Search, ShieldCheck, QrCode, LogIn, LogOut, Ticket } from "lucide-react";
 import Link from "next/link";
 
 interface EventItem {
@@ -19,9 +21,15 @@ interface EventItem {
   registrations_count?: number;
 }
 
+interface UserProfile {
+  id: string;
+  email: string;
+  full_name: string;
+  role: "student" | "organizer";
+}
+
 const CATEGORIES = ["All", "Tech", "Cultural", "Sports", "Academic", "Workshop"];
 
-/* ---------- Brand mark: a torn ticket stub, not a generic icon-in-a-box ---------- */
 function Logomark() {
   return (
     <div className="relative w-8 h-8 shrink-0">
@@ -46,7 +54,6 @@ function Logomark() {
   );
 }
 
-/* ---------- Cursor-tracked spotlight surface, reused by cards + the ticket mock ---------- */
 function SpotlightCard({
   children,
   className = "",
@@ -80,10 +87,8 @@ function SpotlightCard({
   );
 }
 
-/* ---------- Hero visual: a tilting mock of the actual digital pass users get ---------- */
 function TicketPreview({ headline }: { headline: string }) {
   const [tilt, setTilt] = useState({ x: 0, y: 0 });
-  // Fixed pseudo-QR pattern so server/client markup always matches (no Math.random at render)
   const qrPattern = [
     1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1,
     0, 1, 0, 1, 1, 0, 1, 1, 1, 0, 1,
@@ -167,13 +172,43 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [selectedEvent, setSelectedEvent] = useState<EventItem | null>(null);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [isAuthOpen, setIsAuthOpen] = useState(false);
+  
+  // Point 6: My passes modal state
+  const [isMyTicketsOpen, setIsMyTicketsOpen] = useState(false);
+
+  // User Auth & Role state
+  const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
 
+  const checkUser = useCallback(async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", session.user.id)
+        .single();
+
+      if (profile) {
+        setCurrentUser(profile as UserProfile);
+      } else {
+        setCurrentUser({
+          id: session.user.id,
+          email: session.user.email || "",
+          full_name: session.user.user_metadata?.full_name || "Campus User",
+          role: session.user.user_metadata?.role || "student",
+        });
+      }
+    } else {
+      setCurrentUser(null);
+    }
+  }, []);
+
   const fetchEvents = useCallback(async () => {
     setLoading(true);
-    // Supabase se events aur unke corresponding registrations count fetch karna
     const { data, error } = await supabase
       .from("events")
       .select("*, registrations(count)")
@@ -193,7 +228,16 @@ export default function Home() {
 
   useEffect(() => {
     fetchEvents();
-  }, [fetchEvents]);
+    checkUser();
+
+    const { data: authListener } = supabase.auth.onAuthStateChange(() => {
+      checkUser();
+    });
+
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
+  }, [fetchEvents, checkUser]);
 
   const filteredEvents = useMemo(() => {
     return events.filter((event) => {
@@ -228,18 +272,11 @@ export default function Home() {
 
   return (
     <main className="relative min-h-screen bg-[#08080A] text-zinc-200 selection:bg-[#FF5A36]/30 overflow-x-hidden">
-      {/* Ambient mesh + grain */}
+      {/* Ambient mesh */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden">
         <div className="absolute -top-56 left-[10%] h-[560px] w-[720px] rounded-full bg-[#FF5A36]/[0.16] blur-[140px]" />
         <div className="absolute top-[15%] -right-56 h-[480px] w-[560px] rounded-full bg-[#B33A22]/[0.12] blur-[130px]" />
         <div className="absolute bottom-0 left-1/3 h-[380px] w-[560px] rounded-full bg-[#FF5A36]/[0.06] blur-[120px]" />
-        <div
-          className="absolute inset-0 opacity-[0.03] mix-blend-overlay"
-          style={{
-            backgroundImage:
-              "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")",
-          }}
-        />
       </div>
 
       <div className="relative px-6 md:px-12">
@@ -254,22 +291,78 @@ export default function Home() {
             <Logomark />
             <span className="text-[15px] font-semibold text-white tracking-tight">EventHub</span>
           </div>
-          <div className="flex items-center gap-3">
+
+          <div className="flex items-center gap-2.5 flex-wrap">
             <Link
               href="/verify"
-              className="inline-flex items-center gap-2 border border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.06] hover:border-white/[0.14] text-zinc-300 text-sm font-medium px-4 py-2.5 rounded-xl transition-colors duration-200"
+              className="inline-flex items-center gap-2 border border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.06] hover:border-white/[0.14] text-zinc-300 text-xs sm:text-sm font-medium px-3.5 py-2 rounded-xl transition-colors duration-200"
             >
               <ShieldCheck className="w-4 h-4 text-emerald-400" />
               Gate Portal
             </Link>
-            <motion.button
-              whileTap={{ scale: 0.97 }}
-              onClick={() => setIsCreateOpen(true)}
-              className="inline-flex items-center gap-2 bg-gradient-to-b from-[#FF6B45] to-[#E8481F] text-white text-sm font-medium px-4 py-2.5 rounded-xl shadow-[0_0_0_1px_rgba(255,255,255,0.15)_inset,0_10px_24px_-8px_rgba(232,72,31,0.7)] hover:shadow-[0_0_0_1px_rgba(255,255,255,0.2)_inset,0_14px_30px_-8px_rgba(232,72,31,0.85)] transition-shadow duration-200 cursor-pointer"
-            >
-              <Plus className="w-4 h-4" />
-              Host Event
-            </motion.button>
+
+            {/* Point 6: My Passes Button (Only when logged in) */}
+            {currentUser && (
+              <button
+                onClick={() => setIsMyTicketsOpen(true)}
+                className="inline-flex items-center gap-1.5 border border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.06] hover:border-white/[0.14] text-zinc-300 text-xs sm:text-sm font-medium px-3.5 py-2 rounded-xl transition-colors cursor-pointer"
+              >
+                <Ticket className="w-4 h-4 text-[#FF6B45]" />
+                My Passes
+              </button>
+            )}
+
+            {/* Organizer-only host button */}
+            {currentUser?.role === "organizer" && (
+              <motion.button
+                whileTap={{ scale: 0.97 }}
+                onClick={() => setIsCreateOpen(true)}
+                className="inline-flex items-center gap-1.5 bg-gradient-to-b from-[#FF6B45] to-[#E8481F] text-white text-xs sm:text-sm font-medium px-3.5 py-2 rounded-xl shadow-[0_0_0_1px_rgba(255,255,255,0.15)_inset,0_10px_24px_-8px_rgba(232,72,31,0.7)] transition-all cursor-pointer"
+              >
+                <Plus className="w-4 h-4" />
+                Host Event
+              </motion.button>
+            )}
+
+            {/* Auth status pill */}
+            {currentUser ? (
+              <div className="flex items-center gap-2.5 bg-white/[0.04] border border-white/[0.08] rounded-full pl-3 pr-1.5 py-1 backdrop-blur-md">
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                  <span className="text-xs font-medium text-white max-w-[110px] truncate">
+                    {currentUser.full_name}
+                  </span>
+                  <span
+                    className={`text-[9px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-full ${
+                      currentUser.role === "organizer"
+                        ? "bg-[#E8481F]/20 text-[#FFB199] border border-[#E8481F]/30"
+                        : "bg-white/[0.08] text-zinc-400"
+                    }`}
+                  >
+                    {currentUser.role}
+                  </span>
+                </div>
+                <button
+                  onClick={async () => {
+                    await supabase.auth.signOut();
+                    window.location.reload();
+                  }}
+                  title="Sign Out"
+                  className="p-1.5 rounded-full hover:bg-white/[0.08] text-zinc-400 hover:text-rose-400 transition-colors cursor-pointer"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            ) : (
+              <motion.button
+                whileTap={{ scale: 0.97 }}
+                onClick={() => setIsAuthOpen(true)}
+                className="inline-flex items-center gap-1.5 bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.1] text-white text-xs sm:text-sm font-medium px-4 py-2 rounded-xl transition-all cursor-pointer"
+              >
+                <LogIn className="w-4 h-4 text-zinc-400" />
+                Sign In
+              </motion.button>
+            )}
           </div>
         </motion.nav>
 
@@ -297,7 +390,7 @@ export default function Home() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search by event, description, or venue..."
-                className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl pl-11 pr-4 py-3.5 text-sm text-white placeholder-zinc-600 outline-none focus:border-[#FF5A36]/50 focus:bg-white/[0.06] focus:shadow-[0_0_0_4px_rgba(255,90,54,0.1)] transition-all duration-200"
+                className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl pl-11 pr-4 py-3.5 text-sm text-white placeholder-zinc-600 outline-none focus:border-[#FF5A36]/50 focus:bg-white/[0.05] transition-all"
               />
             </div>
 
@@ -335,8 +428,6 @@ export default function Home() {
             <span className="text-[11px] font-medium text-zinc-600 whitespace-nowrap shrink-0 pr-4 border-r border-white/[0.08]">
               Happening now
             </span>
-            {/* Clipped viewport — the label above lives outside this, so the
-                animated track sliding left is masked instead of overlapping it */}
             <div className="flex-1 min-w-0 overflow-hidden">
               <div
                 className="flex gap-8 whitespace-nowrap w-max"
@@ -505,6 +596,7 @@ export default function Home() {
           )}
         </div>
 
+        {/* Modals */}
         <AnimatePresence>
           {selectedEvent && (
             <RsvpModal
@@ -521,6 +613,19 @@ export default function Home() {
           isOpen={isCreateOpen}
           onClose={() => setIsCreateOpen(false)}
           onEventCreated={fetchEvents}
+        />
+
+        <AuthModal
+          isOpen={isAuthOpen}
+          onClose={() => setIsAuthOpen(false)}
+          onSuccess={checkUser}
+        />
+
+        {/* Point 6: Render My Passes Modal */}
+        <MyTicketsModal
+          isOpen={isMyTicketsOpen}
+          onClose={() => setIsMyTicketsOpen(false)}
+          userEmail={currentUser?.email || ""}
         />
       </div>
 
