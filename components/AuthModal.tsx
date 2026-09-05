@@ -95,7 +95,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 overflow-y-auto py-8">
       <div className="pointer-events-none absolute h-72 w-72 rounded-full bg-[#FF5A36]/15 blur-[100px]" />
 
       <motion.div

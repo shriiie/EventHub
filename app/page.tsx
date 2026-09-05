@@ -394,22 +394,22 @@ export default function Home() {
               />
             </div>
 
-            <div className="mt-8 flex items-center gap-6 text-sm">
-              <div>
-                <span className="text-white font-semibold tabular-nums">{events.length}</span>
-                <span className="text-zinc-500"> events live</span>
-              </div>
-              <div className="w-px h-4 bg-white/[0.08]" />
-              <div>
-                <span className="text-white font-semibold tabular-nums">{stats.openSpots}</span>
-                <span className="text-zinc-500"> spots open</span>
-              </div>
-              <div className="w-px h-4 bg-white/[0.08]" />
-              <div>
-                <span className="text-white font-semibold tabular-nums">{stats.categoriesLive}</span>
-                <span className="text-zinc-500"> categories</span>
-              </div>
-            </div>
+            <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
+  <div>
+    <span className="text-white font-semibold tabular-nums">{events.length}</span>
+    <span className="text-zinc-500"> events live</span>
+  </div>
+  <div className="hidden sm:block w-px h-4 bg-white/[0.08]" />
+  <div>
+    <span className="text-white font-semibold tabular-nums">{stats.openSpots}</span>
+    <span className="text-zinc-500"> spots open</span>
+  </div>
+  <div className="hidden sm:block w-px h-4 bg-white/[0.08]" />
+  <div>
+    <span className="text-white font-semibold tabular-nums">{stats.categoriesLive}</span>
+    <span className="text-zinc-500"> categories</span>
+  </div>
+</div>
           </motion.div>
 
           <motion.div

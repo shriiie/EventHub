@@ -88,7 +88,7 @@ export default function RsvpModal({ event, onClose }: RsvpModalProps) {
       <motion.div
         initial={{ opacity: 0, scale: 0.95, y: 15 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
-        className="relative w-full max-w-md rounded-3xl border border-white/[0.1] bg-[#0C0C0F] p-7 shadow-[0_24px_60px_-15px_rgba(0,0,0,0.9)]"
+        className="relative w-full max-w-md max-h-[90vh] overflow-y-auto rounded-3xl border border-white/[0.1] bg-[#0C0C0F] p-7 shadow-[0_24px_60px_-15px_rgba(0,0,0,0.9)]"
       >
         <button
           onClick={onClose}

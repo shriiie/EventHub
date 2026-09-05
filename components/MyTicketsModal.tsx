@@ -68,13 +68,13 @@ export default function MyTicketsModal({ isOpen, onClose, userEmail }: MyTickets
                 key={pass.id}
                 className="p-4 rounded-2xl border border-white/[0.08] bg-white/[0.02] flex items-center justify-between gap-4"
               >
-                <div className="space-y-1.5">
+                <div className="space-y-1.5 min-w-0">
                   <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
                     pass.is_checked_in ? "bg-zinc-800 text-zinc-400" : "bg-emerald-500/15 text-emerald-400 border border-emerald-500/20"
                   }`}>
                     {pass.is_checked_in ? "Checked In" : "Valid Pass"}
                   </span>
-                  <h4 className="text-sm font-bold text-white">{pass.events?.title}</h4>
+                  <h4 className="text-sm font-bold text-white break-words">{pass.events?.title}</h4>
                   <p className="text-[11px] text-zinc-400 flex items-center gap-1">
                     <Calendar className="w-3 h-3 text-zinc-500" />
                     {new Date(pass.events?.event_date).toLocaleDateString()}
