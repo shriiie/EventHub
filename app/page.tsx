@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import RsvpModal from "@/components/RSVPmodel";
-import { Calendar, MapPin, Users, Tag } from "lucide-react";
+import CreateEventModal from "@/components/CreateEventModal";
+import { Calendar, MapPin, Users, Tag, Plus } from "lucide-react";
 
 interface EventItem {
   id: string;
@@ -19,30 +20,32 @@ export default function Home() {
   const [events, setEvents] = useState<EventItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedEvent, setSelectedEvent] = useState<EventItem | null>(null);
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
 
-  // Page load hone par Supabase se events lana
-  useEffect(() => {
-    async function fetchEvents() {
-      const { data, error } = await supabase
-        .from("events")
-        .select("*")
-        .order("event_date", { ascending: true });
+  // Events fetch karne ka reusable function
+  const fetchEvents = useCallback(async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from("events")
+      .select("*")
+      .order("event_date", { ascending: true });
 
-      if (error) {
-        console.error("Error fetching events:", error.message);
-      } else if (data) {
-        setEvents(data);
-      }
-      setLoading(false);
+    if (error) {
+      console.error("Error fetching events:", error.message);
+    } else if (data) {
+      setEvents(data);
     }
-
-    fetchEvents();
+    setLoading(false);
   }, []);
+
+  useEffect(() => {
+    fetchEvents();
+  }, [fetchEvents]);
 
   return (
     <main className="min-h-screen bg-slate-950 text-slate-100 p-6 md:p-12">
       {/* Header */}
-      <div className="max-w-6xl mx-auto mb-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-slate-800 pb-6">
+      <div className="max-w-6xl mx-auto mb-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-800 pb-6">
         <div>
           <h1 className="text-3xl md:text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400">
             EventHub 🎟️
@@ -51,6 +54,15 @@ export default function Home() {
             Discover campus events and get your instant digital entry pass.
           </p>
         </div>
+
+        {/* Host Event Button */}
+        <button
+          onClick={() => setIsCreateOpen(true)}
+          className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium px-4 py-2.5 rounded-xl transition-all shadow-lg shadow-indigo-600/20 cursor-pointer"
+        >
+          <Plus className="w-4 h-4" />
+          Host Event
+        </button>
       </div>
 
       {/* Events Grid */}
@@ -113,7 +125,6 @@ export default function Home() {
                     <span className="truncate">{event.location}</span>
                   </div>
 
-                  {/* Click karne par modal open hoga */}
                   <button
                     onClick={() => setSelectedEvent(event)}
                     className="w-full mt-4 bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-2 rounded-xl text-sm transition-colors cursor-pointer"
@@ -127,13 +138,20 @@ export default function Home() {
         )}
       </div>
 
-      {/* RSVP Modal Popup */}
+      {/* RSVP Modal */}
       {selectedEvent && (
         <RsvpModal
           event={selectedEvent}
           onClose={() => setSelectedEvent(null)}
         />
       )}
+
+      {/* Create Event Modal */}
+      <CreateEventModal
+        isOpen={isCreateOpen}
+        onClose={() => setIsCreateOpen(false)}
+        onEventCreated={fetchEvents}
+      />
     </main>
   );
 }
