@@ -2,9 +2,10 @@
 
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { supabase } from "@/lib/supabase";
-import RsvpModal from "@/components/RSVPmodel";
+import RsvpModal from "@/components/RsvpModal";
 import CreateEventModal from "@/components/CreateEventModal";
-import { Calendar, MapPin, Users, Tag, Plus, Search } from "lucide-react";
+import { Calendar, MapPin, Users, Tag, Plus, Search, ShieldCheck } from "lucide-react";
+import Link from "next/link";
 
 interface EventItem {
   id: string;
@@ -14,6 +15,7 @@ interface EventItem {
   event_date: string;
   location: string;
   capacity: number;
+  registrations_count?: number;
 }
 
 const CATEGORIES = ["All", "Tech", "Cultural", "Sports", "Academic", "Workshop"];
@@ -24,21 +26,25 @@ export default function Home() {
   const [selectedEvent, setSelectedEvent] = useState<EventItem | null>(null);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
 
-  // Search aur Filter states
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
 
   const fetchEvents = useCallback(async () => {
     setLoading(true);
+    // Supabase se events aur unke corresponding registrations count fetch karna
     const { data, error } = await supabase
       .from("events")
-      .select("*")
+      .select("*, registrations(count)")
       .order("event_date", { ascending: true });
 
     if (error) {
       console.error("Error fetching events:", error.message);
     } else if (data) {
-      setEvents(data);
+      const formattedEvents = data.map((item: any) => ({
+        ...item,
+        registrations_count: item.registrations?.[0]?.count || 0,
+      }));
+      setEvents(formattedEvents);
     }
     setLoading(false);
   }, []);
@@ -47,7 +53,6 @@ export default function Home() {
     fetchEvents();
   }, [fetchEvents]);
 
-  // Client-side real-time filtering
   const filteredEvents = useMemo(() => {
     return events.filter((event) => {
       const matchesCategory =
@@ -77,19 +82,27 @@ export default function Home() {
           </p>
         </div>
 
-        <button
-          onClick={() => setIsCreateOpen(true)}
-          className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium px-4 py-2.5 rounded-xl transition-all shadow-lg shadow-indigo-600/20 cursor-pointer"
-        >
-          <Plus className="w-4 h-4" />
-          Host Event
-        </button>
+        <div className="flex items-center gap-3">
+          <Link
+            href="/verify"
+            className="inline-flex items-center gap-2 border border-slate-700 bg-slate-900 hover:bg-slate-800 text-slate-200 text-sm font-medium px-4 py-2.5 rounded-xl transition-all"
+          >
+            <ShieldCheck className="w-4 h-4 text-emerald-400" />
+            Gate Portal
+          </Link>
+          <button
+            onClick={() => setIsCreateOpen(true)}
+            className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium px-4 py-2.5 rounded-xl transition-all shadow-lg shadow-indigo-600/20 cursor-pointer"
+          >
+            <Plus className="w-4 h-4" />
+            Host Event
+          </button>
+        </div>
       </div>
 
       <div className="max-w-6xl mx-auto space-y-6">
-        {/* Search & Filter Controls */}
+        {/* Search & Filter */}
         <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
-          {/* Search Bar */}
           <div className="relative flex-1 max-w-md">
             <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
             <input
@@ -101,7 +114,6 @@ export default function Home() {
             />
           </div>
 
-          {/* Category Pills */}
           <div className="flex items-center gap-2 overflow-x-auto pb-2 md:pb-0 scrollbar-none">
             {CATEGORIES.map((category) => (
               <button
@@ -119,7 +131,7 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Section Title with Live Count */}
+        {/* Section Title */}
         <div className="flex items-center justify-between pt-2">
           <h2 className="text-xl font-semibold text-slate-200">
             {selectedCategory === "All" ? "All Events" : `${selectedCategory} Events`}
@@ -131,9 +143,7 @@ export default function Home() {
 
         {/* Events Grid */}
         {loading ? (
-          <div className="text-center py-16 text-slate-500">
-            Loading events...
-          </div>
+          <div className="text-center py-16 text-slate-500">Loading events...</div>
         ) : filteredEvents.length === 0 ? (
           <div className="text-center py-16 bg-slate-900/50 rounded-2xl border border-slate-800">
             <p className="text-slate-300 font-medium">No matching events found</p>
@@ -143,72 +153,87 @@ export default function Home() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredEvents.map((event) => (
-              <div
-                key={event.id}
-                className="bg-slate-900 border border-slate-800 rounded-2xl p-6 flex flex-col justify-between hover:border-indigo-500/50 transition-all duration-300 shadow-lg"
-              >
-                <div>
-                  <div className="flex items-center justify-between gap-2 mb-3">
-                    <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
-                      <Tag className="w-3 h-3" />
-                      {event.category}
-                    </span>
-                    <span className="inline-flex items-center gap-1 text-xs text-slate-400">
-                      <Users className="w-3.5 h-3.5 text-slate-500" />
-                      Cap: {event.capacity}
-                    </span>
+            {filteredEvents.map((event) => {
+              const booked = event.registrations_count || 0;
+              const remaining = Math.max(0, event.capacity - booked);
+              const isFull = remaining === 0;
+
+              return (
+                <div
+                  key={event.id}
+                  className="bg-slate-900 border border-slate-800 rounded-2xl p-6 flex flex-col justify-between hover:border-indigo-500/50 transition-all duration-300 shadow-lg"
+                >
+                  <div>
+                    <div className="flex items-center justify-between gap-2 mb-3">
+                      <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+                        <Tag className="w-3 h-3" />
+                        {event.category}
+                      </span>
+                      <span
+                        className={`inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-0.5 rounded-full ${
+                          isFull
+                            ? "bg-rose-500/10 text-rose-400 border border-rose-500/20"
+                            : "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
+                        }`}
+                      >
+                        <Users className="w-3.5 h-3.5" />
+                        {isFull ? "Housefull" : `${remaining} spots left`}
+                      </span>
+                    </div>
+
+                    <h3 className="text-xl font-bold text-white mb-2">
+                      {event.title}
+                    </h3>
+
+                    <p className="text-slate-400 text-sm line-clamp-2 mb-4">
+                      {event.description}
+                    </p>
                   </div>
 
-                  <h3 className="text-xl font-bold text-white mb-2">
-                    {event.title}
-                  </h3>
+                  <div className="pt-4 border-t border-slate-800/80 space-y-2.5">
+                    <div className="flex items-center gap-2 text-xs text-slate-300">
+                      <Calendar className="w-4 h-4 text-indigo-400 shrink-0" />
+                      <span>
+                        {new Date(event.event_date).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </span>
+                    </div>
 
-                  <p className="text-slate-400 text-sm line-clamp-2 mb-4">
-                    {event.description}
-                  </p>
+                    <div className="flex items-center gap-2 text-xs text-slate-300">
+                      <MapPin className="w-4 h-4 text-rose-400 shrink-0" />
+                      <span className="truncate">{event.location}</span>
+                    </div>
+
+                    <button
+                      disabled={isFull}
+                      onClick={() => setSelectedEvent(event)}
+                      className="w-full mt-4 bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-800 disabled:text-slate-500 disabled:cursor-not-allowed text-white font-medium py-2 rounded-xl text-sm transition-colors cursor-pointer"
+                    >
+                      {isFull ? "Registration Closed" : "RSVP / Get Ticket"}
+                    </button>
+                  </div>
                 </div>
-
-                <div className="pt-4 border-t border-slate-800/80 space-y-2.5">
-                  <div className="flex items-center gap-2 text-xs text-slate-300">
-                    <Calendar className="w-4 h-4 text-indigo-400 shrink-0" />
-                    <span>
-                      {new Date(event.event_date).toLocaleDateString("en-US", {
-                        month: "short",
-                        day: "numeric",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </span>
-                  </div>
-
-                  <div className="flex items-center gap-2 text-xs text-slate-300">
-                    <MapPin className="w-4 h-4 text-rose-400 shrink-0" />
-                    <span className="truncate">{event.location}</span>
-                  </div>
-
-                  <button
-                    onClick={() => setSelectedEvent(event)}
-                    className="w-full mt-4 bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-2 rounded-xl text-sm transition-colors cursor-pointer"
-                  >
-                    RSVP / Get Ticket
-                  </button>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
 
-      {/* RSVP Modal */}
+      {/* Modals */}
       {selectedEvent && (
         <RsvpModal
           event={selectedEvent}
-          onClose={() => setSelectedEvent(null)}
+          onClose={() => {
+            setSelectedEvent(null);
+            fetchEvents();
+          }}
         />
       )}
 
-      {/* Create Event Modal */}
       <CreateEventModal
         isOpen={isCreateOpen}
         onClose={() => setIsCreateOpen(false)}
