@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { supabase } from "@/lib/supabase";
 import RsvpModal from "@/components/RSVPmodel";
 import CreateEventModal from "@/components/CreateEventModal";
-import { Calendar, MapPin, Users, Tag, Plus } from "lucide-react";
+import { Calendar, MapPin, Users, Tag, Plus, Search } from "lucide-react";
 
 interface EventItem {
   id: string;
@@ -16,13 +16,18 @@ interface EventItem {
   capacity: number;
 }
 
+const CATEGORIES = ["All", "Tech", "Cultural", "Sports", "Academic", "Workshop"];
+
 export default function Home() {
   const [events, setEvents] = useState<EventItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedEvent, setSelectedEvent] = useState<EventItem | null>(null);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
 
-  // Events fetch karne ka reusable function
+  // Search aur Filter states
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("All");
+
   const fetchEvents = useCallback(async () => {
     setLoading(true);
     const { data, error } = await supabase
@@ -42,10 +47,27 @@ export default function Home() {
     fetchEvents();
   }, [fetchEvents]);
 
+  // Client-side real-time filtering
+  const filteredEvents = useMemo(() => {
+    return events.filter((event) => {
+      const matchesCategory =
+        selectedCategory === "All" || event.category === selectedCategory;
+
+      const query = searchQuery.toLowerCase().trim();
+      const matchesSearch =
+        query === "" ||
+        event.title.toLowerCase().includes(query) ||
+        event.description.toLowerCase().includes(query) ||
+        event.location.toLowerCase().includes(query);
+
+      return matchesCategory && matchesSearch;
+    });
+  }, [events, searchQuery, selectedCategory]);
+
   return (
     <main className="min-h-screen bg-slate-950 text-slate-100 p-6 md:p-12">
       {/* Header */}
-      <div className="max-w-6xl mx-auto mb-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-800 pb-6">
+      <div className="max-w-6xl mx-auto mb-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-800 pb-6">
         <div>
           <h1 className="text-3xl md:text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400">
             EventHub 🎟️
@@ -55,7 +77,6 @@ export default function Home() {
           </p>
         </div>
 
-        {/* Host Event Button */}
         <button
           onClick={() => setIsCreateOpen(true)}
           className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium px-4 py-2.5 rounded-xl transition-all shadow-lg shadow-indigo-600/20 cursor-pointer"
@@ -65,23 +86,64 @@ export default function Home() {
         </button>
       </div>
 
-      {/* Events Grid */}
-      <div className="max-w-6xl mx-auto">
-        <h2 className="text-xl font-semibold mb-6 text-slate-200">
-          Upcoming Events
-        </h2>
+      <div className="max-w-6xl mx-auto space-y-6">
+        {/* Search & Filter Controls */}
+        <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
+          {/* Search Bar */}
+          <div className="relative flex-1 max-w-md">
+            <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search by event, description, or venue..."
+              className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-10 pr-4 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition-colors"
+            />
+          </div>
 
+          {/* Category Pills */}
+          <div className="flex items-center gap-2 overflow-x-auto pb-2 md:pb-0 scrollbar-none">
+            {CATEGORIES.map((category) => (
+              <button
+                key={category}
+                onClick={() => setSelectedCategory(category)}
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-medium transition-all cursor-pointer whitespace-nowrap ${
+                  selectedCategory === category
+                    ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30"
+                    : "bg-slate-900 border border-slate-800 text-slate-400 hover:text-slate-200 hover:border-slate-700"
+                }`}
+              >
+                {category}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Section Title with Live Count */}
+        <div className="flex items-center justify-between pt-2">
+          <h2 className="text-xl font-semibold text-slate-200">
+            {selectedCategory === "All" ? "All Events" : `${selectedCategory} Events`}
+          </h2>
+          <span className="text-xs text-slate-500">
+            Showing {filteredEvents.length} of {events.length}
+          </span>
+        </div>
+
+        {/* Events Grid */}
         {loading ? (
           <div className="text-center py-16 text-slate-500">
             Loading events...
           </div>
-        ) : events.length === 0 ? (
+        ) : filteredEvents.length === 0 ? (
           <div className="text-center py-16 bg-slate-900/50 rounded-2xl border border-slate-800">
-            <p className="text-slate-400 text-base">No events found right now.</p>
+            <p className="text-slate-300 font-medium">No matching events found</p>
+            <p className="text-slate-500 text-xs mt-1">
+              Try adjusting your search query or switching category filters.
+            </p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {events.map((event) => (
+            {filteredEvents.map((event) => (
               <div
                 key={event.id}
                 className="bg-slate-900 border border-slate-800 rounded-2xl p-6 flex flex-col justify-between hover:border-indigo-500/50 transition-all duration-300 shadow-lg"
