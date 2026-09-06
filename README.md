@@ -9,7 +9,6 @@ A full-stack, mobile-responsive web app built with **Next.js 15**, **Supabase**,
 ## 🌟 Live Demo
 
 - **Live URL:** [https://event-hub-drab-nine.vercel.app](https://event-hub-drab-nine.vercel.app)
-- **Gate Portal:** [https://event-hub-drab-nine.vercel.app/verify](https://event-hub-drab-nine.vercel.app/verify)
 
 ---
 
