@@ -38,7 +38,7 @@ A full-stack, mobile-responsive web app built with **Next.js 15**, **Supabase**,
 
 1. **Clone the repository:**
    ```bash
-   git clone [https://github.com/shriya22654/EventHub.git](https://github.com/shriya22654/EventHub.git)
+   git clone (https://github.com/shriiie/EventHub.git)
    cd EventHub
 2. **Install packages:**
    ```bash
