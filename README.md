@@ -43,10 +43,6 @@ A full-stack, mobile-responsive web app built with **Next.js 15**, **Supabase**,
 2. **Install packages:**
    ```bash
    npm install
-2. **Install packages:**
-   ```bash
-   npm install
-   ```
 3. **Set environment variables:**
    Create a `.env.local` file in the root directory:
    ```env
