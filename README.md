@@ -1,36 +1,43 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🎟️ EventHub
 
-## Getting Started
+> Campus Event Management & Live Gate Verification Platform.
 
-First, run the development server:
+A full-stack, mobile-responsive web app built with **Next.js 15**, **Supabase**, and **Tailwind CSS**. It replaces manual event spreadsheets and paper badges with instant digital QR passes verified directly at college gates using smartphone cameras.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+---
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 🌟 Live Demo
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- **Live URL:** [https://event-hub-drab-nine.vercel.app](https://event-hub-drab-nine.vercel.app)
+- **Gate Portal:** [https://event-hub-drab-nine.vercel.app/verify](https://event-hub-drab-nine.vercel.app/verify)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+---
 
-## Learn More
+## 🚀 Key Features
 
-To learn more about Next.js, take a look at the following resources:
+* **Instant Digital Pass:** Generates a real-time QR pass with dynamic ticket codes upon event RSVP.
+* **Role-Based Access (Student / Organizer):**
+  * **Students:** Explore campus events, filter by categories, and view active tickets in *My Passes*.
+  * **Organizers:** Host new events, set seat capacity, and define venue details.
+* **Live Capacity Tracker:** Real-time seat availability indicator that locks registration when seats are full.
+* **Camera Gate Scanner:** Security volunteers can open the `/verify` portal on any phone to scan QR passes and prevent duplicate entry.
+* **Mobile-First UI:** Dark-mode spotlight UI with smooth Framer Motion interactions and zero layout shifting on phones.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+---
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 🛠️ Tech Stack
 
-## Deploy on Vercel
+* **Frontend:** Next.js 15 (App Router), React, TypeScript
+* **Styling & UI:** Tailwind CSS, Framer Motion, Lucide Icons, Canvas Confetti
+* **Database & Auth:** Supabase (PostgreSQL, Row Level Security)
+* **QR Processing:** `qrcode.react`, `@zxing/browser`
+* **Deployment:** Vercel
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+---
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 💻 Local Setup
+
+1. **Clone the repository:**
+   ```bash
+   git clone [https://github.com/shriya22654/EventHub.git](https://github.com/shriya22654/EventHub.git)
+   cd EventHub
