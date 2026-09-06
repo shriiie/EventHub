@@ -40,3 +40,21 @@ A full-stack, mobile-responsive web app built with **Next.js 15**, **Supabase**,
    ```bash
    git clone [https://github.com/shriya22654/EventHub.git](https://github.com/shriya22654/EventHub.git)
    cd EventHub
+2. **Install packages:**
+   ```bash
+   npm install
+2. **Install packages:**
+   ```bash
+   npm install
+   ```
+3. **Set environment variables:**
+   Create a `.env.local` file in the root directory:
+   ```env
+   NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+   ```
+4. **Run locally:**
+   ```bash
+   npm run dev
+   ```
+   Open `http://localhost:3000` in your browser.
